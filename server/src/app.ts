@@ -1,18 +1,21 @@
-import  express  from "express";
+import express from "express";
+
 import patientRouter from "./routes/patient.routes.js";
-import { errorHandler as errorMiddleware } from "./middleware/error.middleware.js";
+import authRouter from "./routes/auth.routes.js";
+
+import { errorMidddleware } from "./middleware/error.middleware.js";
 
 const app = express();
- app.use(express.json());
-    
 
- app.get("/", (req, res) => {
-     res.send("Hello, World!");
- });
+app.use(express.json());
 
+app.get("/", (req, res) => {
+  res.send("Hello, World!");
+});
 
- console.log("Patient router:");
- app.use("/api/patients", patientRouter);
- app.use(errorMiddleware); 
+app.use("/api/patients", patientRouter);
+app.use("/api/auth", authRouter);
 
- export default app;    
+app.use(errorMidddleware);
+
+export default app;
