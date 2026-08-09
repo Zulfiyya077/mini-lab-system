@@ -1,6 +1,8 @@
 import type { Request, Response } from "express";
 
 import { getAllPatients, createPatient, getPatientById, updatePatient, deletePatient} from "../services/patient.service.js";    
+import { AppError } from "../errors/AppError.js";
+import { th } from "zod/v4/locales";
 
 export const getPatients = (req: Request, res: Response) => {
    console.log("Fetching all patients...");
@@ -22,11 +24,11 @@ export const createPatientController = (req: Request, res: Response) => {
 export const getPatientByIdController = (req: Request, res: Response) => {
     const id = Number(req.params.id); 
     if (isNaN(id)) {
-        return res.status(400).json({ error: "Invalid patient ID" });
+        throw new AppError("Invalid patient ID", 400);
     }   
     const patient = getPatientById(id);
     if (!patient) {
-        return res.status(404).json({ error: "Patient not found" });
+        throw new AppError("Patient not found", 404);
     }
     res.json(patient);
 }

@@ -1,5 +1,6 @@
 import  express  from "express";
 import patientRouter from "./routes/patient.routes.js";
+import { errorHandler as errorMiddleware } from "./middleware/error.middleware.js";
 
 const app = express();
  app.use(express.json());
@@ -10,7 +11,8 @@ const app = express();
  });
 
 
- console.log("Patient router:"); // Debugging line to check if patientRouter is imported correctly
+ console.log("Patient router:");
  app.use("/api/patients", patientRouter);
+ app.use(errorMiddleware); 
 
  export default app;    
