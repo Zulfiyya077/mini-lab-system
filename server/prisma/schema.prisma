@@ -8,11 +8,13 @@ datasource db {
 }
 
 model Patient {
-  id        Int       @id @default(autoincrement())
-  firstName String    @map("first_name") @db.VarChar(100)
-  lastName  String    @map("last_name") @db.VarChar(100)
-  phone     String?   @db.VarChar(30)
-  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  id          Int        @id @default(autoincrement())
+  firstName   String     @map("first_name")
+  lastName    String     @map("last_name")
+  phone       String?
+  createdAt   DateTime?  @default(now()) @map("created_at")
+
+  analyses    Analysis[]
 
   @@map("patients")
 }
@@ -24,14 +26,41 @@ enum UserRole {
   LAB_TECHNICIAN
   LAB_DOCTOR
 }
-
 model User { 
-  id Int @id @default(autoincrement())
-  name   String
-  email String @unique
-  password String 
-  role  UserRole @default(LAB_TECHNICIAN)
-  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  id              Int         @id @default(autoincrement())
+  name            String
+  email           String      @unique
+  password        String 
+  role            UserRole    @default(LAB_TECHNICIAN)
+  createdAt       DateTime?   @default(now()) @map("created_at") @db.Timestamp(6)
+
+  createdAnalyses  Analysis[] @relation("AnalysisCreator")
+  reviewedAnalyses Analysis[] @relation("AnalysisReviewer")
 
   @@map("users")
+}
+
+
+
+enum AnalysisStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+model Analysis {
+  id              Int            @id @default(autoincrement())
+  patientId       Int            @map("patient_id")
+  createdBy       Int            @map("created_by")
+  reviewedBy      Int?           @map("reviewed_by")
+
+  result          String?
+  status          AnalysisStatus @default(PENDING)
+
+  reviewedAt      DateTime?      @map("reviewed_at")
+  rejectionReason String?        @map("rejection_reason")
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  patient         Patient        @relation(fields: [patientId], references: [id])
+  creator         User           @relation("AnalysisCreator", fields: [createdBy], references: [id])
+  reviewer        User?          @relation("AnalysisReviewer", fields: [reviewedBy], references: [id])
 }
