@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma.js";
+import type { PatientQuery } from "../types/patient.types.js";
 
 
 export const getPatients = async () => {
@@ -18,7 +19,7 @@ export const getPatientById = async (id: number) => {
     });
 };
 
-export const updatePatient = async (    
+export const updatePatient = async (
     id: number,
     updatedPatient: {
         firstName?: string;
@@ -57,4 +58,73 @@ export const deletePatient = async (id: number) => {
     return prisma.patient.delete({
         where: { id }
     });
+};
+
+
+
+export const getPatientsService = async (query: PatientQuery) => {
+
+  const {
+    page,
+    limit,
+    search,
+    sortBy,
+    sortOrder,
+    status
+  } = query;
+
+  const skip = (page - 1) * limit;
+ 
+  const where = {
+    ...(search
+      ? {
+          OR: [
+            {
+              firstName: {
+                contains: search,
+                mode: "insensitive" as const,
+              },
+            },
+            {
+              lastName: {
+                contains: search,
+                mode: "insensitive" as const,
+              },
+            },
+          ],
+        }
+      : {}),
+
+    ...(status ? { status } : {}),
+  };
+
+  const orderBy = {
+    [sortBy]: sortOrder,
+  };
+
+
+
+  const [patients, total] = await Promise.all([
+    prisma.patient.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy,
+    }),
+
+    prisma.patient.count({
+      where,
+    }),
+  ]);
+
+
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    patients,
+    total,
+    totalPages,
+    page,
+    limit,
+  };
 };

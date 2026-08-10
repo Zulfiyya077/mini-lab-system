@@ -11,7 +11,6 @@ if (!JWT_SECRET) {
 
 export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
     const token = req.cookies.accessToken;  
-    console.log("Access token from cookie:", token);
 
     if (!token) {
         return res.status(401).json({ error: "Access token is missing", success: false, statusCode: 401 });
@@ -20,7 +19,6 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
     try {
         const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
         req.user = decoded;
-     console.log("Decoded user from token:", req.cookies);
 
         next();
     } catch (err) {
