@@ -1,5 +1,7 @@
 import { AppError } from "../errors/AppError.js";
+import type { Prisma } from "../generated/prisma/browser.js";
 import { prisma } from "../lib/prisma.js";
+import type { AnalysesQuery } from "../types/analyses.types.js";
 
 export const createAnalysis = async (
     patientId: number,
@@ -82,3 +84,89 @@ export const rejectAnalysis = async (
     })
 
 }
+
+
+export const getAnalysesService = async (
+  query: AnalysesQuery,
+  user: {
+    id: number;
+    role: "LAB_DOCTOR" | "ADMIN" | "LAB_TECHNICIAN";
+  }
+) => {
+  const {
+    page,
+    limit,
+    search,
+    status,
+  } = query;
+
+  const skip = (page - 1) * limit;
+
+  const where: Prisma.AnalysisWhereInput = {
+    ...(status ? { status } : {}),
+
+    ...(search
+      ? {
+          patient: {
+            OR: [
+              {
+                firstName: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+              {
+                lastName: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+            ],
+          },
+        }
+      : {}),
+  };
+
+  const [analyses, total] = await Promise.all([
+    prisma.analysis.findMany({
+      where,
+      skip,
+      take: limit,
+      include: {
+        patient: true,
+
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+
+        reviewer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    }),
+
+    prisma.analysis.count({
+      where,
+    }),
+  ]);
+
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    analyses,
+    total,
+    totalPages,
+    page,
+    limit,
+  };
+};

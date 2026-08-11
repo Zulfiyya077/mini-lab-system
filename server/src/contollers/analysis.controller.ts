@@ -1,7 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
-import { approveAnalysis, createAnalysis, rejectAnalysis } from "../services/analysis.service.js"
+import { approveAnalysis, createAnalysis, getAnalysesService, rejectAnalysis } from "../services/analysis.service.js"
 import { success } from "zod";
 import { AppError } from "../errors/AppError.js";
+import { analysisQuerySchema } from "../schemas/analyses.schema.js";
 
 
 export const createAnalysisController = async (
@@ -67,3 +68,21 @@ export const rejectAnalysisContoller = async (
 
     })
 }
+
+export const getAnalyses = async (
+    req: Request,
+    res: Response
+) => {
+    
+        const query = analysisQuerySchema.parse(req.query);
+
+        const result = getAnalysesService(query, req.user)
+
+        res.status(200).json({
+            data: (await result).analyses,
+            success: true
+
+        });
+    
+
+};

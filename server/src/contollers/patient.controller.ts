@@ -8,9 +8,9 @@ export const getPatients = async (
 ) => {
     const search = req.query.search as string | undefined;
 
-const query = patientPaginationSchema.parse(req.query);
- 
-const result = await patientService.getPatientsService(query);
+    const query = patientPaginationSchema.parse(req.query);
+
+    const result = await patientService.getPatientsService(query);
 
     res.status(200).json({
         data: result.patients,
