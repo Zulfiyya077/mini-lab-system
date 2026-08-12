@@ -4,18 +4,26 @@ import { prisma } from "../lib/prisma.js";
 import type { AnalysesQuery } from "../types/analyses.types.js";
 
 export const createAnalysis = async (
-    patientId: number,
-    createdBy: number,
-    result?: string
+  patientId: number,
+  createdBy: number,
+  result?: string
 ) => {
-    return prisma.analysis.create({
-        data: {
-            patientId,
-            createdBy,
-            ...(result !== undefined && { result })
-        }
-    })
-}
+  const patient = await prisma.patient.findUnique({
+    where: { id: patientId },
+  });
+
+  if (!patient) {
+    throw new AppError("Patient not found", 404);
+  }
+
+  return prisma.analysis.create({
+    data: {
+      patientId,
+      createdBy,
+      result: result ?? null,
+    },
+  });
+};
 
 export const approveAnalysis = async (
     analysisId: number,

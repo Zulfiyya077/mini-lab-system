@@ -9,7 +9,12 @@ import { validate } from "../middleware/validate.middleware.js";
 
 const router = Router();
 
-router.get("/", getAnalyses);
+router.get(
+  "/",
+  authMiddleware,
+  authorize("ADMIN", "LAB_DOCTOR", "LAB_TECHNICIAN"),
+  getAnalyses
+);
 
 router.post("/",
     authMiddleware,
