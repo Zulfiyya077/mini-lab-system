@@ -4,8 +4,9 @@ import { authMiddleware } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
 import { createAnalysisSchema, rejectAnalysisSchema } from "../schemas/analyses.schema.js";
 import { validate } from "../middleware/validate.middleware.js";
+import { upload } from "../middleware/upload.middleware.js";
 
-
+import { uploadFile } from "../contollers/analysis.controller.js";
 
 const router = Router();
 
@@ -37,4 +38,12 @@ router.patch("/:id/reject",
     validate(rejectAnalysisSchema),
     rejectAnalysisContoller
 )
+
+router.post(
+  "/:id/files",
+  authMiddleware,
+  authorize("ADMIN", "LAB_DOCTOR", "LAB_TECHNICIAN"),
+  upload.single("file"),
+  uploadFile
+);
 export default router
