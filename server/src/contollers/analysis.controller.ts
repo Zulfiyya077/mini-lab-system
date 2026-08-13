@@ -4,7 +4,7 @@ import { success } from "zod";
 import { AppError } from "../errors/AppError.js";
 import { analysisQuerySchema } from "../schemas/analyses.schema.js";
 
-
+import * as analysisService from "../services/analysis.service.js";
 export const createAnalysisController = async (
     req: Request,
     res: Response
@@ -85,4 +85,33 @@ export const getAnalyses = async (
         });
     
 
+};
+export const uploadFile = async (
+  req: Request,
+  res: Response
+) => {
+  const analysisId = Number(req.params.id);
+
+  if (isNaN(analysisId)) {
+    throw new AppError("Invalid analysis ID", 400);
+  }
+
+  if (!req.file) {
+    throw new AppError("File is required", 400);
+  }
+
+  const file = await analysisService.uploadAnalysisFile(
+    analysisId,
+    req.file
+  );
+
+  if (!file) {
+    throw new AppError("Analysis not found", 404);
+  }
+
+  res.status(201).json({
+    success: true,
+    data: file,
+    statusCode: 201,
+  });
 };

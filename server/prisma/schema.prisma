@@ -12,20 +12,17 @@ enum PatientStatus {
   INACTIVE
 }
 
-
-
 model Patient {
-  id          Int        @id @default(autoincrement())
-  firstName   String     @map("first_name")
-  lastName    String     @map("last_name")
-  phone       String?
-  createdAt   DateTime?  @default(now()) @map("created_at")
-  status     PatientStatus    @default(ACTIVE)
-  analyses    Analysis[]
+  id        Int           @id @default(autoincrement())
+  firstName String        @map("first_name")
+  lastName  String        @map("last_name")
+  phone     String?
+  createdAt DateTime?     @default(now()) @map("created_at")
+  status    PatientStatus @default(ACTIVE)
+  analyses  Analysis[]
 
   @@map("patients")
 }
-
 
 enum UserRole {
   ADMIN
@@ -33,21 +30,20 @@ enum UserRole {
   LAB_TECHNICIAN
   LAB_DOCTOR
 }
-model User { 
-  id              Int         @id @default(autoincrement())
-  name            String
-  email           String      @unique
-  password        String 
-  role            UserRole    @default(LAB_TECHNICIAN)
-  createdAt       DateTime?   @default(now()) @map("created_at") @db.Timestamp(6)
+
+model User {
+  id        Int       @id @default(autoincrement())
+  name      String
+  email     String    @unique
+  password  String
+  role      UserRole  @default(LAB_TECHNICIAN)
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
 
   createdAnalyses  Analysis[] @relation("AnalysisCreator")
   reviewedAnalyses Analysis[] @relation("AnalysisReviewer")
 
   @@map("users")
 }
-
-
 
 enum AnalysisStatus {
   PENDING
@@ -56,19 +52,38 @@ enum AnalysisStatus {
 }
 
 model Analysis {
-  id              Int            @id @default(autoincrement())
-  patientId       Int            @map("patient_id")
-  createdBy       Int            @map("created_by")
-  reviewedBy      Int?           @map("reviewed_by")
+  id         Int  @id @default(autoincrement())
+  patientId  Int  @map("patient_id")
+  createdBy  Int  @map("created_by")
+  reviewedBy Int? @map("reviewed_by")
 
-  result          String?
-  status          AnalysisStatus @default(PENDING)
+  result String?
+  status AnalysisStatus @default(PENDING)
 
-  reviewedAt      DateTime?      @map("reviewed_at")
-  rejectionReason String?        @map("rejection_reason")
-  createdAt       DateTime       @default(now()) @map("created_at")
+  reviewedAt      DateTime? @map("reviewed_at")
+  rejectionReason String?   @map("rejection_reason")
+  createdAt       DateTime  @default(now()) @map("created_at")
 
-  patient         Patient        @relation(fields: [patientId], references: [id])
-  creator         User           @relation("AnalysisCreator", fields: [createdBy], references: [id])
-  reviewer        User?          @relation("AnalysisReviewer", fields: [reviewedBy], references: [id])
+  patient  Patient @relation(fields: [patientId], references: [id])
+  creator  User    @relation("AnalysisCreator", fields: [createdBy], references: [id])
+  reviewer User?   @relation("AnalysisReviewer", fields: [reviewedBy], references: [id])
+
+  files AnalysisFile[]
+}
+
+model AnalysisFile {
+  id         Int @id @default(autoincrement())
+  analysisId Int @map("analysis_id")
+
+  fileName     String @map("file_name")
+  originalName String @map("original_name")
+  mimeType     String @map("mime_type")
+  size         Int
+  storageKey   String @map("storage_key")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  analysis Analysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  @@map("analysis_files")
 }

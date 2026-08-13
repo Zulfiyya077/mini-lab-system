@@ -178,3 +178,28 @@ export const getAnalysesService = async (
     limit,
   };
 };
+export const uploadAnalysisFile = async (
+  analysisId: number,
+  file: Express.Multer.File
+) => {
+  const analysis = await prisma.analysis.findUnique({
+    where: {
+      id: analysisId,
+    },
+  });
+
+  if (!analysis) {
+    return null;
+  }
+
+  return prisma.analysisFile.create({
+    data: {
+      analysisId,
+      fileName: file.filename,
+      originalName: file.originalname,
+      mimeType: file.mimetype,
+      size: file.size,
+      storageKey: file.path,
+    },
+  });
+};
