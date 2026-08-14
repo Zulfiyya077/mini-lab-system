@@ -2,27 +2,28 @@ import { AppError } from "../errors/AppError.js";
 import type { Prisma } from "../generated/prisma/browser.js";
 import { prisma } from "../lib/prisma.js";
 import type { AnalysesQuery } from "../types/analyses.types.js";
-
+import path from "path";
+import fs from "fs/promises";
 export const createAnalysis = async (
-  patientId: number,
-  createdBy: number,
-  result?: string
+    patientId: number,
+    createdBy: number,
+    result?: string
 ) => {
-  const patient = await prisma.patient.findUnique({
-    where: { id: patientId },
-  });
+    const patient = await prisma.patient.findUnique({
+        where: { id: patientId },
+    });
 
-  if (!patient) {
-    throw new AppError("Patient not found", 404);
-  }
+    if (!patient) {
+        throw new AppError("Patient not found", 404);
+    }
 
-  return prisma.analysis.create({
-    data: {
-      patientId,
-      createdBy,
-      result: result ?? null,
-    },
-  });
+    return prisma.analysis.create({
+        data: {
+            patientId,
+            createdBy,
+            result: result ?? null,
+        },
+    });
 };
 
 export const approveAnalysis = async (
@@ -95,93 +96,120 @@ export const rejectAnalysis = async (
 
 
 export const getAnalysesService = async (
-  query: AnalysesQuery,
-  user: {
-    id: number;
-    role: "LAB_DOCTOR" | "ADMIN" | "LAB_TECHNICIAN";
-  }
+    query: AnalysesQuery,
+    user: {
+        id: number;
+        role: "LAB_DOCTOR" | "ADMIN" | "LAB_TECHNICIAN";
+    }
 ) => {
-  const {
-    page,
-    limit,
-    search,
-    status,
-  } = query;
+    const {
+        page,
+        limit,
+        search,
+        status,
+    } = query;
 
-  const skip = (page - 1) * limit;
+    const skip = (page - 1) * limit;
 
-  const where: Prisma.AnalysisWhereInput = {
-    ...(status ? { status } : {}),
+    const where: Prisma.AnalysisWhereInput = {
+        ...(status ? { status } : {}),
 
-    ...(search
-      ? {
-          patient: {
-            OR: [
-              {
-                firstName: {
-                  contains: search,
-                  mode: "insensitive",
+        ...(search
+            ? {
+                patient: {
+                    OR: [
+                        {
+                            firstName: {
+                                contains: search,
+                                mode: "insensitive",
+                            },
+                        },
+                        {
+                            lastName: {
+                                contains: search,
+                                mode: "insensitive",
+                            },
+                        },
+                    ],
                 },
-              },
-              {
-                lastName: {
-                  contains: search,
-                  mode: "insensitive",
+            }
+            : {}),
+    };
+
+    const [analyses, total] = await Promise.all([
+        prisma.analysis.findMany({
+            where,
+            skip,
+            take: limit,
+            include: {
+                patient: true,
+
+                creator: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        role: true,
+                    },
                 },
-              },
-            ],
-          },
-        }
-      : {}),
-  };
 
-  const [analyses, total] = await Promise.all([
-    prisma.analysis.findMany({
-      where,
-      skip,
-      take: limit,
-      include: {
-        patient: true,
+                reviewer: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        role: true,
+                    },
+                },
+            },
+        }),
 
-        creator: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-          },
-        },
+        prisma.analysis.count({
+            where,
+        }),
+    ]);
 
-        reviewer: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-          },
-        },
-      },
-    }),
+    const totalPages = Math.ceil(total / limit);
 
-    prisma.analysis.count({
-      where,
-    }),
-  ]);
-
-  const totalPages = Math.ceil(total / limit);
-
-  return {
-    analyses,
-    total,
-    totalPages,
-    page,
-    limit,
-  };
+    return {
+        analyses,
+        total,
+        totalPages,
+        page,
+        limit,
+    };
 };
 export const uploadAnalysisFile = async (
-  analysisId: number,
-  file: Express.Multer.File
+    analysisId: number,
+    file: Express.Multer.File
 ) => {
+    const analysis = await prisma.analysis.findUnique({
+        where: {
+            id: analysisId,
+        },
+    });
+
+    if (!analysis) {
+        return null;
+    }
+
+    const analysisFile = await prisma.analysisFile.create({
+        data: {
+            analysisId,
+            fileName: file.filename,
+            originalName: file.originalname,
+            mimeType: file.mimetype,
+            size: file.size,
+            storageKey: file.path,
+        },
+    });
+
+    return analysisFile;
+};
+
+
+
+export const getAnalysisFiles = async (analysisId: number) => {
   const analysis = await prisma.analysis.findUnique({
     where: {
       id: analysisId,
@@ -192,14 +220,70 @@ export const uploadAnalysisFile = async (
     return null;
   }
 
-  return prisma.analysisFile.create({
-    data: {
+  return prisma.analysisFile.findMany({
+    where: {
       analysisId,
-      fileName: file.filename,
-      originalName: file.originalname,
-      mimeType: file.mimetype,
-      size: file.size,
-      storageKey: file.path,
+    },
+    orderBy: {
+      createdAt: "desc",
     },
   });
+};
+
+
+export const getAnalysisFile = async (fileId: number) => {
+  return prisma.analysisFile.findUnique({
+    where: {
+      id: fileId,
+    },
+  });
+};
+
+
+export const deleteAnalysisFile = async (fileId: number) => {
+  console.log("1️⃣ fileId:", fileId);
+  console.log("2️⃣ typeof:", typeof fileId);
+
+  const file = await prisma.analysisFile.findUnique({
+    where: {
+      id: fileId,
+    },
+  });
+
+  console.log("3️⃣ FOUND FILE:", file);
+
+  if (!file) {
+    return null;
+  }
+
+  const filePath = path.resolve(
+    process.cwd(),
+    file.storageKey
+  );
+
+  console.log("4️⃣ FILE PATH:", filePath);
+
+  try {
+    await fs.unlink(filePath);
+
+    console.log("5️⃣ PHYSICAL FILE DELETED");
+  } catch (error: any) {
+    console.log("❌ FS ERROR:", error);
+
+    if (error.code !== "ENOENT") {
+      throw error;
+    }
+  }
+
+  console.log("6️⃣ BEFORE PRISMA DELETE");
+
+  const deletedFile = await prisma.analysisFile.delete({
+    where: {
+      id: fileId,
+    },
+  });
+
+  console.log("7️⃣ DELETED FROM DB:", deletedFile);
+
+  return deletedFile;
 };
