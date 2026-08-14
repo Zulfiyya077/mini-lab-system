@@ -210,80 +210,76 @@ export const uploadAnalysisFile = async (
 
 
 export const getAnalysisFiles = async (analysisId: number) => {
-  const analysis = await prisma.analysis.findUnique({
-    where: {
-      id: analysisId,
-    },
-  });
+    const analysis = await prisma.analysis.findUnique({
+        where: {
+            id: analysisId,
+        },
+    });
 
-  if (!analysis) {
-    return null;
-  }
+    if (!analysis) {
+        return null;
+    }
 
-  return prisma.analysisFile.findMany({
-    where: {
-      analysisId,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+    return prisma.analysisFile.findMany({
+        where: {
+            analysisId,
+        },
+        orderBy: {
+            createdAt: "desc",
+        },
+    });
 };
 
 
 export const getAnalysisFile = async (fileId: number) => {
-  return prisma.analysisFile.findUnique({
-    where: {
-      id: fileId,
-    },
-  });
+    return prisma.analysisFile.findUnique({
+        where: {
+            id: fileId,
+        },
+    });
 };
 
 
 export const deleteAnalysisFile = async (fileId: number) => {
-  console.log("1️⃣ fileId:", fileId);
-  console.log("2️⃣ typeof:", typeof fileId);
 
-  const file = await prisma.analysisFile.findUnique({
-    where: {
-      id: fileId,
-    },
-  });
 
-  console.log("3️⃣ FOUND FILE:", file);
+    const file = await prisma.analysisFile.findUnique({
+        where: {
+            id: fileId,
+        },
+    });
 
-  if (!file) {
-    return null;
-  }
 
-  const filePath = path.resolve(
-    process.cwd(),
-    file.storageKey
-  );
-
-  console.log("4️⃣ FILE PATH:", filePath);
-
-  try {
-    await fs.unlink(filePath);
-
-    console.log("5️⃣ PHYSICAL FILE DELETED");
-  } catch (error: any) {
-    console.log("❌ FS ERROR:", error);
-
-    if (error.code !== "ENOENT") {
-      throw error;
+    if (!file) {
+        return null;
     }
-  }
 
-  console.log("6️⃣ BEFORE PRISMA DELETE");
+    const filePath = path.resolve(
+        process.cwd(),
+        file.storageKey
+    );
 
-  const deletedFile = await prisma.analysisFile.delete({
-    where: {
-      id: fileId,
-    },
-  });
 
-  console.log("7️⃣ DELETED FROM DB:", deletedFile);
+    try {
+        await fs.unlink(filePath);
 
-  return deletedFile;
+
+    } catch (error: any) {
+
+
+        if (error.code !== "ENOENT") {
+            throw error;
+        }
+    }
+
+
+
+    const deletedFile = await prisma.analysisFile.delete({
+        where: {
+            id: fileId,
+        },
+    });
+
+
+    return deletedFile;
 };

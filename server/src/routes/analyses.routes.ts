@@ -47,6 +47,8 @@ router.patch("/:id/reject",
     rejectAnalysisContoller
 )
 
+
+
 router.post(
   "/:id/files",
   authMiddleware,
@@ -84,5 +86,7 @@ router.get(
   authorize("ADMIN", "LAB_DOCTOR", "LAB_TECHNICIAN"),
   downloadAnalysisFile
 );
+
+
 
 export default router
