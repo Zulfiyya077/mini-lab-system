@@ -10,6 +10,48 @@ import { approveAnalysisController } from "../contollers/analysis.controller.js"
 const router = Router();
 
 router.post("/register", validate(registerSchema), register);
+
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Login user
+ *     description: Authenticates a user and sets an access token cookie.
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: aysel@gmail.com
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 example: Test12345
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *       401:
+ *         description: Invalid email or password
+ *       400:
+ *         description: Validation error
+ */
+router.post(
+  "/login",
+  validate(loginSchema),
+  login
+);
+
+
 router.post("/login", validate(loginSchema), login);
 router.get("/me",authMiddleware, getMe);
 router.post("/logout", logout);
